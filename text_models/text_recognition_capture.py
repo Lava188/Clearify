@@ -8,7 +8,11 @@ from symspellpy import SymSpell, Verbosity
 import pkg_resources
 import re
 
-pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+from paddleocr import PaddleOCR
+
+# pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+
+ocr = PaddleOCR(use_angle_cls=True, lang='en')
 
 sym_spell = SymSpell(max_dictionary_edit_distance=2, prefix_length=7)
 dictionary_path = pkg_resources.resource_filename(
@@ -85,7 +89,7 @@ def perform_text_capture():
         cv2.rectangle(frame, (int(w*0.1), int(h*0.1)), 
                      (int(w*0.9), int(h*0.9)), (0, 255, 0), 2)
         
-        cv2.putText(frame, 'Press "C" to capture or "ESC" to exit', (20, 30), 
+        cv2.putText(frame, '', (20, 30), 
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         
         cv2.imshow('Text Capture', frame)
@@ -98,72 +102,54 @@ def perform_text_capture():
             
             cv2.imwrite(original_img_path, frame)
             
-            # Xử lý hình ảnh
-            processed_imgs = preprocess_image(frame)
+            # # Áp dụng với tiền lý hình ảnh
+            # processed_imgs = preprocess_image(frame)
             
-            # Lưu một trong các phiên bản đã xử lý để hiển thị
-            cv2.imwrite(processed_img_path, processed_imgs[2]) 
+            # # Lưu một trong các phiên bản đã xử lý để hiển thị
+            # cv2.imwrite(processed_img_path, processed_imgs[2]) 
             
-            cap.release()
-            cv2.destroyAllWindows()
-            print("Images captured and processed")
+            # cap.release()
+            # cv2.destroyAllWindows()
+            # print("Images captured and processed")
             
-            text_results = []
-            languages = ['eng'] 
+            # all_recognized_text = ""
+            # for img in processed_imgs:
+            #     try:
+            #         img_np = np.array(img)
+            #         results = ocr.ocr(img_np, cls=True)
+            #         for line in results:
+            #             for word_info in line:
+            #                 if isinstance(word_info, (list, tuple)) and len(word_info) > 1:
+            #                     text, confidence = word_info[1]
+            #                     all_recognized_text += text + " "
+            #     except Exception as e:
+            #         print(f"Lỗi khi nhận diện với PaddleOCR: {e}")
             
-            # Thử nhiều cấu hình OCR khác nhau
-            for img in processed_imgs:
-                for lang in languages:
-                    # Cấu hình 1: PSM 6 - Giả định một khối văn bản duy nhất
-                    text1 = pytesseract.image_to_string(img, lang=lang, config='--psm 6')
-                    if text1.strip():
-                        text_results.append(text1)
-                    
-                    # Cấu hình 2: PSM 3 - Phân đoạn trang tự động
-                    text2 = pytesseract.image_to_string(img, lang=lang, config='--psm 3')
-                    if text2.strip():
-                        text_results.append(text2)
-                    
-                    # Cấu hình 3: PSM 4 - Giả định một cột văn bản duy nhất
-                    text3 = pytesseract.image_to_string(img, lang=lang, config='--psm 4')
-                    if text3.strip():
-                        text_results.append(text3)
-                    
-                    # Cấu hình 4: PSM 11 - Nhận dạng văn bản rời rạc
-                    text4 = pytesseract.image_to_string(img, lang=lang, config='--psm 11 --oem 3')
-                    if text4.strip():
-                        text_results.append(text4)
+            all_recognized_text = ""
+            try:
+                img_np = np.array(frame)
+                results = ocr.ocr(img_np, cls=True)
+                for line in results:
+                    for word_info in line:
+                        if isinstance(word_info, (list, tuple)) and len(word_info) > 1:
+                            text, confidence = word_info[1]
+                            all_recognized_text += text + " "
+            except Exception as e:
+                print(f"Lỗi khi nhận diện với PaddleOCR: {e}")
             
-            # Thêm nhận dạng từ hình ảnh gốc
-            for lang in languages:
-                text_orig = pytesseract.image_to_string(frame, lang=lang, config='--psm 1')
-                if text_orig.strip():
-                    text_results.append(text_orig)
-                    
-            # Xử lý kết quả
-            if text_results:
-                # Loại bỏ các kết quả trống hoặc quá ngắn
-                filtered_results = [text for text in text_results if len(text.strip()) > 5]
-                
-                if filtered_results:
-                    # Chọn kết quả dài nhất hoặc chất lượng nhất
-                    text_output_raw = max(filtered_results, key=len)
-                    
-                    text_output = postprocess_text(text_output_raw)
-                    
-                    print("Recognized text:")
-                    print(text_output)
-                    
-                    # Tạo file âm thanh cho nút đọc
-                    audio_path = f"static/audio/output_audio.mp3"
-                    tts = gTTS(text=text_output, lang='en')  
-                    tts.save(audio_path)
-                    
-                    return text_output, processed_img_path, audio_path
-                else:
-                    return "Không tìm thấy văn bản rõ ràng trong hình ảnh. Vui lòng thử lại với văn bản rõ hơn.", processed_img_path
+
+            if all_recognized_text.strip():
+                text_output = postprocess_text(all_recognized_text.strip())
+                print("Recognized text (PaddleOCR):")
+                print(text_output)
+
+                audio_path = f"static/audio/output_audio_paddle.mp3"
+                tts = gTTS(text=text_output, lang='en')
+                tts.save(audio_path)
+
+                return text_output, processed_img_path, audio_path
             else:
-                return "Không thể nhận diện văn bản. Vui lòng đảm bảo hình ảnh rõ nét và có đủ ánh sáng.", processed_img_path
+                return "Không thể nhận diện văn bản bằng PaddleOCR.", processed_img_path
             
         elif key == 27:  # Phím ESC
             break
