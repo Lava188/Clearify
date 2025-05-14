@@ -84,8 +84,8 @@ def text2():
 
 @app.route('/text-capture', methods=['POST'])
 def text_capture():
-    text_output, img_path, audio_path, timestamp = text_recognition_capture.perform_text_capture()
-    return render_template('text-recognition-capture.html', text_output=text_output, img_path=img_path, audio_path=audio_path, timestamp=timestamp)
+    text_output, img_path, audio_path = text_recognition_capture.perform_text_capture()
+    return render_template('text-recognition-capture.html', text_output=text_output, img_path=img_path, audio_path=audio_path)
 
     
 
