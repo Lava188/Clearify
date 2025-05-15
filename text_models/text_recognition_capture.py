@@ -7,7 +7,6 @@ from datetime import datetime
 from symspellpy import SymSpell, Verbosity
 import pkg_resources
 import re
-
 from paddleocr import PaddleOCR
 
 # pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
