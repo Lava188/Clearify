@@ -6,8 +6,6 @@ A Flask-based assistive web application that helps users with visual impairments
 - **OCR (image upload & capture)**: extract printed or handwritten text from uploaded images or webcam snapshots
 - **Object detection**: identify and describe objects in images, snapshots, or real-time video
 
----
-
 ## Features
 
 1. **Text Recognition (Upload)**
@@ -24,8 +22,6 @@ A Flask-based assistive web application that helps users with visual impairments
 5. **Object Detection (Live)**
    - Real-time object detection on webcam feed; speaks detections every few seconds
 
----
-
 ## Prerequisites
 
 - **Python 3.10** (or compatible 3.x)
@@ -34,16 +30,16 @@ A Flask-based assistive web application that helps users with visual impairments
 
 ## Installation
 
-# 1. Clone the repository
+1. **Clone the repository**
 
 git clone https://github.com/Lava188/Clearify_Project.git
 cd Clearify_Project
 
-# 2. Install dependencies
+2. **Install dependencies**
 
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 3. Usage
+3. **Usage**
 
 python main.py
