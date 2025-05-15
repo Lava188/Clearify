@@ -1,37 +1,24 @@
-
-
 from gtts import gTTS
 import torch
 from PIL import Image
 import os
 from datetime import datetime
-
+from transformers import BlipProcessor, BlipForConditionalGeneration
 from flask import Flask
 
 app = Flask(__name__)
 
 app.config['AUDIO_FOLDER'] = 'static/audio'
 
+processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+caption_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 
 def detect_objects(image_path):
-    # Load the YOLOv5 model
-    model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
     
-    # Load an image
-    img = Image.open(image_path)
-    
-    # Inference
-    results = model(img)
-    
-    # Get detected objects
-    detected_objects = results.pandas().xyxy[0]['name'].unique()  # Get unique detected object names
-    
-    if detected_objects.size > 0:
-        objects_list = ", ".join(detected_objects)
-        description_text = f"The objects detected in the image are: {objects_list}."
-    else:
-        description_text = "No objects detected."
-    
+    raw = Image.open(image_path).convert("RGB")
+    inputs = processor(raw, return_tensors="pt")
+    out = caption_model.generate(**inputs)
+    description_text = processor.decode(out[0], skip_special_tokens=True).capitalize()
 
     # Generate audio from text
         
