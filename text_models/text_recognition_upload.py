@@ -3,10 +3,7 @@ import pytesseract
 from gtts import gTTS
 import os
 from datetime import datetime
-
 from flask import Flask, render_template, request, Response
-
-
 
 app = Flask(__name__)
 
@@ -55,5 +52,3 @@ def perform_ocr_and_audio(image_path):
 
 
     return text, audio_file, adjusted_image_path, timestamp
-
-

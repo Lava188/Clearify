@@ -1,63 +1,68 @@
-
 import cv2
 import torch
 import pyttsx3
-from transformers import pipeline
 import time
 import threading
+import numpy as np
+from ultralytics import YOLO
 
+def preprocess_frame(frame):
+    """Tiền xử lý nhẹ giữ nguyên màu sắc"""
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    h, s, v = cv2.split(hsv)
+    v = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8)).apply(v)
+    enhanced_hsv = cv2.merge([h, s, v])
+    return cv2.cvtColor(enhanced_hsv, cv2.COLOR_HSV2BGR)
 
 def object_detection():
-    # Initialize the components
-    model = torch.hub.load('ultralytics/yolov5', 'yolov5n', pretrained=True)
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
-    model.to(device)
+    model = YOLO('yolov8m.pt')
+    model.conf = 0.5
     
-    text_generator = pipeline('text-generation', model='gpt2')
-    # tts_engine = pyttsx3.init()
-    
-    def speak(text):
-        engine = pyttsx3.init()
-        engine.say(text)
-        engine.runAndWait()
-
-
-    def generate_scene_description(objects):
-        description = ' and '.join(objects) + ' are visible in the scene.'
-        return description
+    tts_engine = pyttsx3.init()
+    def speak(txt):
+        tts_engine.say(txt)
+        tts_engine.runAndWait()
 
     cap = cv2.VideoCapture(0)
-    last_speech_time = time.time() -6
+    last_speech = 0
+    speech_interval = 5
+    detected_objects = []
 
     while True:
         ret, frame = cap.read()
-        if not ret:
-            break
+        if not ret: break
+
+        results = model(frame, verbose=False)
+        current_frame_objects = []
+
         
-        resized_frame = cv2.resize(frame, (640, 480))
-        results = model(resized_frame)
-        detected_objects = [model.names[int(x)] for x in results.xyxy[0][:, -1]]
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                if box.conf >= 0.5:
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    class_name = model.names[int(box.cls)]
+                    current_frame_objects.append(class_name)
+                    confidence = box.conf.item()
+                    
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(frame, f"{class_name} {confidence:.2f}", 
+                              (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, 
+                              (0,255,0), 2)
 
-        if detected_objects and (time.time() - last_speech_time) >= 6:
-            last_speech_time = time.time()
-            scene_description = generate_scene_description(detected_objects)
-            print(scene_description)
-            # tts_engine.say(scene_description)
-            # tts_engine.runAndWait()
-            threading.Thread(target=speak, args=(scene_description,)).start()
+        detected_objects = current_frame_objects
 
-        cv2.imshow('press c to stop detection.', results.render()[0])
+        now = time.time()
+        if now - last_speech > speech_interval:
+            last_speech = now
+            labels = [model.names[int(box.cls)] for box in results[0].boxes if box.conf >= 0.5]
+            if labels:
+                threading.Thread(target=speak, args=(f"I see {', '.join(labels)}",)).start()
 
+        cv2.imshow('Detection (Press C to quit)', frame)
         if cv2.waitKey(1) & 0xFF == ord('c'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
-
-    return  detected_objects
-
-
-
+    return detected_objects

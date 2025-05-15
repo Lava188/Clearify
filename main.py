@@ -169,7 +169,7 @@ def object3():
 @app.route('/object-live', methods=['POST'])
 def object_live():
     
-    detected_objects = object_detection_live.object_detection()
+    detected_objects = object_detection_live.object_detection() or []
 
     return render_template('object-detection-live.html',  detected_objects=detected_objects )
 
