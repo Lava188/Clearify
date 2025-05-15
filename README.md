@@ -30,16 +30,18 @@ A Flask-based assistive web application that helps users with visual impairments
 
 ## Installation
 
-1. **Clone the repository**
+### 1. Clone the repository
 
 git clone https://github.com/Lava188/Clearify_Project.git
+
 cd Clearify_Project
 
-2. **Install dependencies**
+### 2. Install dependencies
 
 pip install --upgrade pip
+
 pip install -r requirements.txt
 
-3. **Usage**
+### 3. Usage
 
 python main.py
